@@ -19,7 +19,11 @@ jobs:
           distribution: "temurin"
           cache: maven
       - name: Build and Test
+        # Run the clean and verify phases to compile code and run tests
+        # This is a prerequisite for code coverage and quality analysis
         run: mvn clean verify
+
+# ----------------------------------------------------
 
   sonarcloud:
     name: SonarCloud Security Scan
@@ -28,6 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Required for SonarCloud to analyze the entire history (e.g., for branch/PR comparison)
           fetch-depth: 0
 
       - name: Set up JDK 17
@@ -46,9 +51,17 @@ jobs:
 
       - name: Run SonarCloud analysis
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pass the SONAR_TOKEN as an environment variable (best practice for secrets)
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          mvn sonar:sonar \
-            -Dsonar.projectKey=${{ secrets.SONAR_ORGANIZATION }}_cicd-demo \
-            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+          # Execute the SonarQube analysis goal.
+          # The sonar:sonar goal will automatically pick up:
+          # - sonar.organization=rabtens from your pom.xml
+          # - sonar.host.url=https://sonarcloud.io from your pom.xml
+          # - sonar.projectKey=Rabtens_Learn_git from your pom.xml
+          #
+          # We explicitly run 'verify' first to ensure code is compiled and JaCoCo report is generated.
+          # We use the key from your pom.xml, but you can override it if you prefer:
+          # -Dsonar.projectKey=${{ github.repository }} 
+          
+          mvn verify sonar:sonar
